@@ -109,6 +109,11 @@ func (g *gcs) ReadDown(version uint) (io.ReadCloser, string, error) {
 	return nil, "", os.ErrNotExist
 }
 
+// This source driver does not support ReadAny.
+func (g *gcs) ReadAny(relativeFilepath string) (io.ReadCloser, error) {
+	panic("This source driver does not support ReadAny.")
+}
+
 func (g *gcs) open(m *source.Migration) (io.ReadCloser, string, error) {
 	objectPath := path.Join(g.prefix, m.Raw)
 	reader, err := g.bucket.Object(objectPath).NewReader(context.Background())
