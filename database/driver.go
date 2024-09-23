@@ -9,8 +9,8 @@ import (
 	"io"
 	"sync"
 
-	iurl "github.com/golang-migrate/migrate/v4/internal/url"
 	"github.com/golang-migrate/migrate/v4/source"
+	iurl "github.com/mikedoty/golang-migrate-plus/internal/url"
 )
 
 var (
