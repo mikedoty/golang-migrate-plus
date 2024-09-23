@@ -6,8 +6,8 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/golang-migrate/migrate/v4/database/sourcing"
-	"github.com/golang-migrate/migrate/v4/source"
+	"github.com/mikedoty/golang-migrate-plus/database/sourcing"
+	"github.com/mikedoty/golang-migrate-plus/source"
 )
 
 // StartBufSize is the default starting size of the buffer used to scan and parse multi-statement migrations

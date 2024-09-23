@@ -15,9 +15,9 @@ import (
 	sdb "cloud.google.com/go/spanner/admin/database/apiv1"
 	"cloud.google.com/go/spanner/spansql"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database"
-	"github.com/golang-migrate/migrate/v4/source"
+	"github.com/mikedoty/golang-migrate-plus"
+	"github.com/mikedoty/golang-migrate-plus/database"
+	"github.com/mikedoty/golang-migrate-plus/source"
 
 	adminpb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"github.com/hashicorp/go-multierror"

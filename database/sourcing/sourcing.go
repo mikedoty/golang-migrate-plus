@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang-migrate/migrate/v4/source"
+	"github.com/mikedoty/golang-migrate-plus/source"
 )
 
 func ImportSourcing(sourceDrv source.Driver, sqlBytes []byte) ([]byte, error) {

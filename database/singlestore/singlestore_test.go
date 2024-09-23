@@ -23,12 +23,12 @@ import (
 	"github.com/dhui/dktest"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/go-sql-driver/mysql"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database"
-	dt "github.com/golang-migrate/migrate/v4/database/testing"
-	"github.com/golang-migrate/migrate/v4/dktesting"
-	"github.com/golang-migrate/migrate/v4/source"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/mikedoty/golang-migrate-plus"
+	"github.com/mikedoty/golang-migrate-plus/database"
+	dt "github.com/mikedoty/golang-migrate-plus/database/testing"
+	"github.com/mikedoty/golang-migrate-plus/dktesting"
+	"github.com/mikedoty/golang-migrate-plus/source"
+	_ "github.com/mikedoty/golang-migrate-plus/source/file"
 	"github.com/stretchr/testify/assert"
 )
 
