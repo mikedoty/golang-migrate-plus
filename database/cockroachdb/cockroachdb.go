@@ -12,6 +12,7 @@ import (
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 	"github.com/lib/pq"
 	"go.uber.org/atomic"
@@ -93,6 +94,11 @@ func WithInstance(instance *sql.DB, config *Config) (database.Driver, error) {
 	}
 
 	return px, nil
+}
+
+// This database driver does not currently support file sourcing.
+func (c *CockroachDb) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 func (c *CockroachDb) Open(url string) (database.Driver, error) {
@@ -225,8 +231,8 @@ func (c *CockroachDb) Run(migration io.Reader) error {
 	return nil
 }
 
-func (c *CockroachDb) SetVersion(version int, dirty bool) error {
-	return crdb.ExecuteTx(context.Background(), c.db, nil, func(tx *sql.Tx) error {
+func (c *CockroachDb) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
+	return nil, crdb.ExecuteTx(context.Background(), c.db, nil, func(tx *sql.Tx) error {
 		if _, err := tx.Exec(`DELETE FROM "` + c.config.MigrationsTable + `"`); err != nil {
 			return err
 		}
@@ -265,6 +271,11 @@ func (c *CockroachDb) Version() (version int, dirty bool, err error) {
 	default:
 		return version, dirty, nil
 	}
+}
+
+func (c *CockroachDb) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 func (c *CockroachDb) Drop() (err error) {

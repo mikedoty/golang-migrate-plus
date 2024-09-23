@@ -181,7 +181,7 @@ func testVersion(t *testing.T, engine string) {
 			}
 		}()
 
-		err = d.SetVersion(expectedVersion, false)
+		_, err = d.SetVersion(expectedVersion, false, false, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

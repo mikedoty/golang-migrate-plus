@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/rqlite/gorqlite"
@@ -110,6 +111,11 @@ func (r *Rqlite) ensureVersionTable() (err error) {
 	return nil
 }
 
+// This database driver does not currently support file sourcing.
+func (r *Rqlite) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
+}
+
 // Open returns a new driver instance configured with parameters
 // coming from the URL string. Migrate will call this function
 // only once per instance.
@@ -177,7 +183,7 @@ func (r *Rqlite) Run(migration io.Reader) error {
 // SetVersion saves version and dirty state.
 // Migrate will call this function before and after each call to Run.
 // version must be >= -1. -1 means NilVersion.
-func (r *Rqlite) SetVersion(version int, dirty bool) error {
+func (r *Rqlite) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	deleteQuery := fmt.Sprintf(`DELETE FROM %s`, r.config.MigrationsTable)
 	statements := []gorqlite.ParameterizedStatement{
 		{
@@ -203,15 +209,15 @@ func (r *Rqlite) SetVersion(version int, dirty bool) error {
 	if err != nil {
 		for i, res := range wr {
 			if res.Err != nil {
-				return &database.Error{OrigErr: err, Query: []byte(statements[i].Query)}
+				return nil, &database.Error{OrigErr: err, Query: []byte(statements[i].Query)}
 			}
 		}
 
 		// if somehow we're still here, return the original error with combined queries
-		return &database.Error{OrigErr: err, Query: []byte(deleteQuery + "\n" + insertQuery)}
+		return nil, &database.Error{OrigErr: err, Query: []byte(deleteQuery + "\n" + insertQuery)}
 	}
 
-	return nil
+	return nil, nil
 }
 
 // Version returns the currently active version and if the database is dirty.
@@ -234,6 +240,11 @@ func (r *Rqlite) Version() (version int, dirty bool, err error) {
 	}
 
 	return version, dirty, nil
+}
+
+func (r *Rqlite) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 // Drop deletes everything in the database.

@@ -13,6 +13,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -117,6 +118,11 @@ func WithInstance(instance *sql.DB, config *Config) (database.Driver, error) {
 	}
 
 	return px, nil
+}
+
+// This database driver does not currently support file sourcing.
+func (c *YugabyteDB) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 func (c *YugabyteDB) Open(dbURL string) (database.Driver, error) {
@@ -270,8 +276,8 @@ func (c *YugabyteDB) Run(migration io.Reader) error {
 	return nil
 }
 
-func (c *YugabyteDB) SetVersion(version int, dirty bool) error {
-	return c.doTxWithRetry(context.Background(), &sql.TxOptions{Isolation: sql.LevelSerializable}, func(tx *sql.Tx) error {
+func (c *YugabyteDB) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
+	return nil, c.doTxWithRetry(context.Background(), &sql.TxOptions{Isolation: sql.LevelSerializable}, func(tx *sql.Tx) error {
 		if _, err := tx.Exec(`DELETE FROM "` + c.config.MigrationsTable + `"`); err != nil {
 			return err
 		}
@@ -310,6 +316,11 @@ func (c *YugabyteDB) Version() (version int, dirty bool, err error) {
 	default:
 		return version, dirty, nil
 	}
+}
+
+func (c *YugabyteDB) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 func (c *YugabyteDB) Drop() (err error) {

@@ -17,6 +17,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/source"
 
 	adminpb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"github.com/hashicorp/go-multierror"
@@ -104,6 +105,11 @@ func WithInstance(instance *DB, config *Config) (database.Driver, error) {
 	}
 
 	return sx, nil
+}
+
+// This database driver does not currently support file sourcing.
+func (s *Spanner) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 // Open implements database.Driver
@@ -200,7 +206,7 @@ func (s *Spanner) Run(migration io.Reader) error {
 }
 
 // SetVersion implements database.Driver
-func (s *Spanner) SetVersion(version int, dirty bool) error {
+func (s *Spanner) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	ctx := context.Background()
 
 	_, err := s.db.data.ReadWriteTransaction(ctx,
@@ -214,10 +220,10 @@ func (s *Spanner) SetVersion(version int, dirty bool) error {
 			return txn.BufferWrite(m)
 		})
 	if err != nil {
-		return &database.Error{OrigErr: err}
+		return nil, &database.Error{OrigErr: err}
 	}
 
-	return nil
+	return nil, nil
 }
 
 // Version implements database.Driver
@@ -245,6 +251,11 @@ func (s *Spanner) Version() (version int, dirty bool, err error) {
 	}
 
 	return version, dirty, nil
+}
+
+func (s *Spanner) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 var nameMatcher = regexp.MustCompile(`(CREATE TABLE\s(\S+)\s)|(CREATE.+INDEX\s(\S+)\s)`)

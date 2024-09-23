@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -90,6 +91,11 @@ func (m *Sqlite) ensureVersionTable() (err error) {
 		return err
 	}
 	return nil
+}
+
+// This database driver does not currently support file sourcing.
+func (m *Sqlite) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 func (m *Sqlite) Open(url string) (database.Driver, error) {
@@ -228,15 +234,15 @@ func (m *Sqlite) executeQueryNoTx(query string) error {
 	return nil
 }
 
-func (m *Sqlite) SetVersion(version int, dirty bool) error {
+func (m *Sqlite) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	tx, err := m.db.Begin()
 	if err != nil {
-		return &database.Error{OrigErr: err, Err: "transaction start failed"}
+		return nil, &database.Error{OrigErr: err, Err: "transaction start failed"}
 	}
 
 	query := "DELETE FROM " + m.config.MigrationsTable
 	if _, err := tx.Exec(query); err != nil {
-		return &database.Error{OrigErr: err, Query: []byte(query)}
+		return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 	}
 
 	// Also re-write the schema version for nil dirty versions to prevent
@@ -248,15 +254,15 @@ func (m *Sqlite) SetVersion(version int, dirty bool) error {
 			if errRollback := tx.Rollback(); errRollback != nil {
 				err = multierror.Append(err, errRollback)
 			}
-			return &database.Error{OrigErr: err, Query: []byte(query)}
+			return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return &database.Error{OrigErr: err, Err: "transaction commit failed"}
+		return nil, &database.Error{OrigErr: err, Err: "transaction commit failed"}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (m *Sqlite) Version() (version int, dirty bool, err error) {
@@ -266,4 +272,9 @@ func (m *Sqlite) Version() (version int, dirty bool, err error) {
 		return database.NilVersion, false, nil
 	}
 	return version, dirty, nil
+}
+
+func (m *Sqlite) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }

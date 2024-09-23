@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 	_ "github.com/nakagami/firebirdsql"
 	"go.uber.org/atomic"
@@ -75,6 +76,11 @@ func WithInstance(instance *sql.DB, config *Config) (database.Driver, error) {
 	return fb, nil
 }
 
+// This database driver does not currently support file sourcing.
+func (f *Firebird) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
+}
+
 func (f *Firebird) Open(dsn string) (database.Driver, error) {
 	purl, err := nurl.Parse(dsn)
 	if err != nil {
@@ -136,7 +142,7 @@ func (f *Firebird) Run(migration io.Reader) error {
 	return nil
 }
 
-func (f *Firebird) SetVersion(version int, dirty bool) error {
+func (f *Firebird) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	// Always re-write the schema version to prevent empty schema version
 	// for failed down migration on the first migration
 	// See: https://github.com/golang-migrate/migrate/issues/330
@@ -151,10 +157,10 @@ func (f *Firebird) SetVersion(version int, dirty bool) error {
 		f.config.MigrationsTable, f.config.MigrationsTable, version, btoi(dirty))
 
 	if _, err := f.conn.ExecContext(context.Background(), query); err != nil {
-		return &database.Error{OrigErr: err, Query: []byte(query)}
+		return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (f *Firebird) Version() (version int, dirty bool, err error) {
@@ -170,6 +176,11 @@ func (f *Firebird) Version() (version int, dirty bool, err error) {
 	default:
 		return version, itob(d), nil
 	}
+}
+
+func (f *Firebird) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 func (f *Firebird) Drop() (err error) {

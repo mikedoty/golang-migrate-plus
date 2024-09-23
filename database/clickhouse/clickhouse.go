@@ -14,6 +14,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/multistmt"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 )
 
@@ -65,6 +66,11 @@ type ClickHouse struct {
 	conn     *sql.DB
 	config   *Config
 	isLocked atomic.Bool
+}
+
+// This database driver does not currently support file sourcing.
+func (ch *ClickHouse) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 func (ch *ClickHouse) Open(dsn string) (database.Driver, error) {
@@ -178,7 +184,12 @@ func (ch *ClickHouse) Version() (int, bool, error) {
 	return version, dirty == 1, nil
 }
 
-func (ch *ClickHouse) SetVersion(version int, dirty bool) error {
+func (ch *ClickHouse) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
+}
+
+func (ch *ClickHouse) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	var (
 		bool = func(v bool) uint8 {
 			if v {
@@ -189,15 +200,15 @@ func (ch *ClickHouse) SetVersion(version int, dirty bool) error {
 		tx, err = ch.conn.Begin()
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	query := "INSERT INTO " + ch.config.MigrationsTable + " (version, dirty, sequence) VALUES (?, ?, ?)"
 	if _, err := tx.Exec(query, version, bool(dirty), time.Now().UnixNano()); err != nil {
-		return &database.Error{OrigErr: err, Query: []byte(query)}
+		return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 	}
 
-	return tx.Commit()
+	return nil, tx.Commit()
 }
 
 // ensureVersionTable checks if versions table exists and, if not, creates it.

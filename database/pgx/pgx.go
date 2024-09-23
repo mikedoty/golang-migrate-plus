@@ -19,6 +19,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/multistmt"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -160,6 +161,11 @@ func WithInstance(instance *sql.DB, config *Config) (database.Driver, error) {
 	}
 
 	return px, nil
+}
+
+// This database driver does not currently support file sourcing.
+func (p *Postgres) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 func (p *Postgres) Open(url string) (database.Driver, error) {
@@ -447,10 +453,10 @@ func runesLastIndex(input []rune, target rune) int {
 	return -1
 }
 
-func (p *Postgres) SetVersion(version int, dirty bool) error {
+func (p *Postgres) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	tx, err := p.conn.BeginTx(context.Background(), &sql.TxOptions{})
 	if err != nil {
-		return &database.Error{OrigErr: err, Err: "transaction start failed"}
+		return nil, &database.Error{OrigErr: err, Err: "transaction start failed"}
 	}
 
 	query := `TRUNCATE ` + quoteIdentifier(p.config.migrationsSchemaName) + `.` + quoteIdentifier(p.config.migrationsTableName)
@@ -458,7 +464,7 @@ func (p *Postgres) SetVersion(version int, dirty bool) error {
 		if errRollback := tx.Rollback(); errRollback != nil {
 			err = multierror.Append(err, errRollback)
 		}
-		return &database.Error{OrigErr: err, Query: []byte(query)}
+		return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 	}
 
 	// Also re-write the schema version for nil dirty versions to prevent
@@ -470,15 +476,15 @@ func (p *Postgres) SetVersion(version int, dirty bool) error {
 			if errRollback := tx.Rollback(); errRollback != nil {
 				err = multierror.Append(err, errRollback)
 			}
-			return &database.Error{OrigErr: err, Query: []byte(query)}
+			return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return &database.Error{OrigErr: err, Err: "transaction commit failed"}
+		return nil, &database.Error{OrigErr: err, Err: "transaction commit failed"}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (p *Postgres) Version() (version int, dirty bool, err error) {
@@ -499,6 +505,11 @@ func (p *Postgres) Version() (version int, dirty bool, err error) {
 	default:
 		return version, dirty, nil
 	}
+}
+
+func (p *Postgres) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 func (p *Postgres) Drop() (err error) {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/multistmt"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 	"github.com/neo4j/neo4j-go-driver/neo4j"
 )
@@ -59,6 +60,11 @@ func WithInstance(driver neo4j.Driver, config *Config) (database.Driver, error) 
 	}
 
 	return nDriver, nil
+}
+
+// This database driver does not currently support file sourcing.
+func (n *Neo4j) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 func (n *Neo4j) Open(url string) (database.Driver, error) {
@@ -181,10 +187,10 @@ func (n *Neo4j) Run(migration io.Reader) (err error) {
 	return err
 }
 
-func (n *Neo4j) SetVersion(version int, dirty bool) (err error) {
+func (n *Neo4j) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	session, err := n.driver.Session(neo4j.AccessModeWrite)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		if cerr := session.Close(); cerr != nil {
@@ -196,9 +202,9 @@ func (n *Neo4j) SetVersion(version int, dirty bool) (err error) {
 		n.config.MigrationsLabel)
 	_, err = neo4j.Collect(session.Run(query, map[string]interface{}{"version": version, "dirty": dirty}))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return nil, nil
 }
 
 type MigrationRecord struct {
@@ -252,6 +258,11 @@ ORDER BY COALESCE(sm.ts, datetime({year: 0})) DESC, sm.version DESC LIMIT 1`,
 	}
 	mr := result.(MigrationRecord)
 	return mr.Version, mr.Dirty, err
+}
+
+func (n *Neo4j) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 func (n *Neo4j) Drop() (err error) {
