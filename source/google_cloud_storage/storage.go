@@ -8,8 +8,9 @@ import (
 	"path"
 	"strings"
 
-	"cloud.google.com/go/storage"
 	"context"
+
+	"cloud.google.com/go/storage"
 	"github.com/golang-migrate/migrate/v4/source"
 	"google.golang.org/api/iterator"
 )
