@@ -51,6 +51,11 @@ func pgConnectionString(host, port string, options ...string) string {
 	return fmt.Sprintf("postgres://postgres:%s@[%s]:%s/postgres?%s", pgPassword, host, port, strings.Join(options, "&"))
 }
 
+func pgConnectionStringAsUser(username, host, port string, options ...string) string {
+	options = append(options, "sslmode=disable")
+	return fmt.Sprintf("postgres://%s:%s@[%s]:%s/postgres?%s", username, pgPassword, host, port, strings.Join(options, "&"))
+}
+
 func isReady(ctx context.Context, c dktest.ContainerInfo) bool {
 	ip, port, err := c.FirstPort()
 	if err != nil {
@@ -1110,7 +1115,7 @@ func TestFailToCreateTableWithoutPermissions(t *testing.T) {
 		})
 
 		// re-connect using that schema
-		connStr := pgConnectionString(ip, port, "search_path=barfoo")
+		connStr := pgConnectionStringAsUser("not_owner", ip, port, "search_path=barfoo")
 		d2, err := p.Open(connStr)
 
 		defer func() {
@@ -1132,7 +1137,7 @@ func TestFailToCreateTableWithoutPermissions(t *testing.T) {
 		}
 
 		// re-connect using that x-migrations-table and x-migrations-table-quoted
-		connStr = pgConnectionString(ip, port, `x-migrations-table="barfoot"."schema_migrations"`, "x-migrations-table-quoted=1")
+		connStr = pgConnectionStringAsUser("not_owner", ip, port, `x-migrations-table="barfoot"."schema_migrations"`, "x-migrations-table-quoted=1")
 		d2, err = p.Open(connStr)
 
 		if !errors.As(err, &e) || err == nil {
@@ -1179,7 +1184,7 @@ func TestCheckBeforeCreateTable(t *testing.T) {
 		})
 
 		// re-connect using that schema
-		connStr := pgConnectionString(ip, port, "search_path=barfoo")
+		connStr := pgConnectionStringAsUser("not_owner", ip, port, "search_path=barfoo")
 		d2, err := p.Open(connStr)
 
 		if err != nil {
