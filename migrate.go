@@ -382,7 +382,10 @@ func (m *Migrate) Force(version int) error {
 		return err
 	}
 
-	if err := m.databaseDrv.SetVersion(version, false); err != nil {
+	// Forcing version is always considered an up migration
+	// for history tracking purposes.
+	direction := source.Up
+	if _, err := m.databaseDrv.SetVersion(version, false, true, &direction); err != nil {
 		return m.unlockErr(err)
 	}
 
@@ -746,7 +749,8 @@ func (m *Migrate) runMigrations(ret <-chan interface{}) error {
 			migr := r
 
 			// set version with dirty state
-			if err := m.databaseDrv.SetVersion(migr.TargetVersion, true); err != nil {
+			pDirection, err := m.databaseDrv.SetVersion(migr.TargetVersion, true, false, nil)
+			if err != nil {
 				return err
 			}
 
@@ -758,7 +762,7 @@ func (m *Migrate) runMigrations(ret <-chan interface{}) error {
 			}
 
 			// set clean state
-			if err := m.databaseDrv.SetVersion(migr.TargetVersion, false); err != nil {
+			if _, err := m.databaseDrv.SetVersion(migr.TargetVersion, false, false, pDirection); err != nil {
 				return err
 			}
 
