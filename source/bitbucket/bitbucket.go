@@ -205,3 +205,8 @@ func (b *Bitbucket) ReadDown(version uint) (r io.ReadCloser, identifier string, 
 	}
 	return nil, "", &os.PathError{Op: fmt.Sprintf("read version %v", version), Path: b.config.Path, Err: os.ErrNotExist}
 }
+
+// This source driver does not support ReadAny.
+func (b *Bitbucket) ReadAny(relativeFilepath string) (io.ReadCloser, error) {
+	panic("This source driver does not support ReadAny.")
+}

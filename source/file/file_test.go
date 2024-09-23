@@ -27,8 +27,11 @@ func Test(t *testing.T) {
 
 	mustWriteFile(t, tmpDir, "5_foobar.down.sql", "5 down")
 
-	mustWriteFile(t, tmpDir, "7_foobar.up.sql", "7 up")
+	// mustWriteFile(t, tmpDir, "7_foobar.up.sql", "7 up")
+	mustWriteFile(t, tmpDir, "7_foobar.up.sql", "7 up;\nsource \"view1.sql\";")
 	mustWriteFile(t, tmpDir, "7_foobar.down.sql", "7 down")
+
+	mustWriteFile(t, tmpDir, "view1.sql", "view 1")
 
 	f := &File{}
 	d, err := f.Open(scheme + tmpDir)

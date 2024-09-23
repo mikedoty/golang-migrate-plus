@@ -138,6 +138,11 @@ func (p *PartialDriver) ReadDown(version uint) (r io.ReadCloser, identifier stri
 	}
 }
 
+// This source driver does not support ReadAny.
+func (p *PartialDriver) ReadAny(relativeFilepath string) (io.ReadCloser, error) {
+	panic("This source driver does not support ReadAny.")
+}
+
 func (p *PartialDriver) open(path string) (http.File, error) {
 	f, err := p.fs.Open(path)
 	if err == nil {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -111,6 +112,11 @@ func WithInstance(instance *mongo.Client, config *Config) (database.Driver, erro
 	}
 
 	return mc, nil
+}
+
+// This database driver does not currently support file sourcing.
+func (m *Mongo) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 func (m *Mongo) Open(dsn string) (database.Driver, error) {
@@ -215,16 +221,16 @@ func parseInt(urlParam string, defaultValue int) (int, error) {
 	// if no url Param passed, return default value
 	return defaultValue, nil
 }
-func (m *Mongo) SetVersion(version int, dirty bool) error {
+func (m *Mongo) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	migrationsCollection := m.db.Collection(m.config.MigrationsCollection)
 	if err := migrationsCollection.Drop(context.TODO()); err != nil {
-		return &database.Error{OrigErr: err, Err: "drop migrations collection failed"}
+		return nil, &database.Error{OrigErr: err, Err: "drop migrations collection failed"}
 	}
 	_, err := migrationsCollection.InsertOne(context.TODO(), bson.M{"version": version, "dirty": dirty})
 	if err != nil {
-		return &database.Error{OrigErr: err, Err: "save version failed"}
+		return nil, &database.Error{OrigErr: err, Err: "save version failed"}
 	}
-	return nil
+	return nil, nil
 }
 
 func (m *Mongo) Version() (version int, dirty bool, err error) {
@@ -238,6 +244,11 @@ func (m *Mongo) Version() (version int, dirty bool, err error) {
 	default:
 		return versionInfo.Version, versionInfo.Dirty, nil
 	}
+}
+
+func (m *Mongo) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 func (m *Mongo) Run(migration io.Reader) error {

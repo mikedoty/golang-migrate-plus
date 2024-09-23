@@ -82,3 +82,7 @@ func (s *Stub) ReadDown(version uint) (r io.ReadCloser, identifier string, err e
 	}
 	return nil, "", &os.PathError{Op: fmt.Sprintf("read down version %v", version), Path: s.Url, Err: os.ErrNotExist}
 }
+
+func (s *Stub) ReadAny(relativeFilepath string) (r io.ReadCloser, err error) {
+	return io.NopCloser(bytes.NewBufferString(relativeFilepath)), nil
+}

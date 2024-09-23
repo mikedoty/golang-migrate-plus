@@ -70,6 +70,10 @@ type Driver interface {
 	// it must return os.ErrNotExist.
 	// Do not start reading, just return the ReadCloser!
 	ReadDown(version uint) (r io.ReadCloser, identifier string, err error)
+
+	// ReadAny returns a ReadCloser for any given filepath.  This is
+	// typically used for sourced migrations (views, functions, etc.).
+	ReadAny(relativeFilepath string) (r io.ReadCloser, err error)
 }
 
 // Open returns a new driver instance.

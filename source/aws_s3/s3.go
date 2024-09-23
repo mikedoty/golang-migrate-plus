@@ -139,6 +139,11 @@ func (s *s3Driver) ReadDown(version uint) (io.ReadCloser, string, error) {
 	return nil, "", os.ErrNotExist
 }
 
+// This source driver does not support ReadAny.
+func (s *s3Driver) ReadAny(relativeFilepath string) (io.ReadCloser, error) {
+	panic("This source driver does not support ReadAny.")
+}
+
 func (s *s3Driver) open(m *source.Migration) (io.ReadCloser, string, error) {
 	key := path.Join(s.config.Prefix, m.Raw)
 	object, err := s.s3client.GetObject(&s3.GetObjectInput{

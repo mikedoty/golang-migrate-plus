@@ -488,7 +488,7 @@ func TestMigrate(t *testing.T) {
 func TestMigrateDirty(t *testing.T) {
 	m, _ := New("stub://", "stub://")
 	dbDrv := m.databaseDrv.(*dStub.Stub)
-	if err := dbDrv.SetVersion(0, true); err != nil {
+	if _, err := dbDrv.SetVersion(0, true, false, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -754,7 +754,7 @@ func TestSteps(t *testing.T) {
 func TestStepsDirty(t *testing.T) {
 	m, _ := New("stub://", "stub://")
 	dbDrv := m.databaseDrv.(*dStub.Stub)
-	if err := dbDrv.SetVersion(0, true); err != nil {
+	if _, err := dbDrv.SetVersion(0, true, false, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -881,7 +881,7 @@ func TestUpAndDown(t *testing.T) {
 func TestUpDirty(t *testing.T) {
 	m, _ := New("stub://", "stub://")
 	dbDrv := m.databaseDrv.(*dStub.Stub)
-	if err := dbDrv.SetVersion(0, true); err != nil {
+	if _, err := dbDrv.SetVersion(0, true, false, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -894,7 +894,7 @@ func TestUpDirty(t *testing.T) {
 func TestDownDirty(t *testing.T) {
 	m, _ := New("stub://", "stub://")
 	dbDrv := m.databaseDrv.(*dStub.Stub)
-	if err := dbDrv.SetVersion(0, true); err != nil {
+	if _, err := dbDrv.SetVersion(0, true, false, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -931,7 +931,7 @@ func TestVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := dbDrv.SetVersion(1, false); err != nil {
+	if _, err := dbDrv.SetVersion(1, false, false, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -970,7 +970,7 @@ func TestRun(t *testing.T) {
 func TestRunDirty(t *testing.T) {
 	m, _ := New("stub://", "stub://")
 	dbDrv := m.databaseDrv.(*dStub.Stub)
-	if err := dbDrv.SetVersion(0, true); err != nil {
+	if _, err := dbDrv.SetVersion(0, true, false, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1008,7 +1008,7 @@ func TestForce(t *testing.T) {
 func TestForceDirty(t *testing.T) {
 	m, _ := New("stub://", "stub://")
 	dbDrv := m.databaseDrv.(*dStub.Stub)
-	if err := dbDrv.SetVersion(0, true); err != nil {
+	if _, err := dbDrv.SetVersion(0, true, false, nil); err != nil {
 		t.Fatal(err)
 	}
 

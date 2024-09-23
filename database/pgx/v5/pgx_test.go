@@ -274,7 +274,7 @@ func TestWithSchema(t *testing.T) {
 		if err := d.Run(strings.NewReader("CREATE SCHEMA foobar AUTHORIZATION postgres")); err != nil {
 			t.Fatal(err)
 		}
-		if err := d.SetVersion(1, false); err != nil {
+		if _, err := d.SetVersion(1, false, false, nil); err != nil {
 			t.Fatal(err)
 		}
 
@@ -298,7 +298,7 @@ func TestWithSchema(t *testing.T) {
 		}
 
 		// now update version and compare
-		if err := d2.SetVersion(2, false); err != nil {
+		if _, err := d2.SetVersion(2, false, false, nil); err != nil {
 			t.Fatal(err)
 		}
 		version, _, err = d2.Version()

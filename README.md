@@ -1,13 +1,103 @@
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/golang-migrate/migrate/ci.yaml?branch=master)](https://github.com/golang-migrate/migrate/actions/workflows/ci.yaml?query=branch%3Amaster)
-[![GoDoc](https://pkg.go.dev/badge/github.com/golang-migrate/migrate)](https://pkg.go.dev/github.com/golang-migrate/migrate/v4)
-[![Coverage Status](https://img.shields.io/coveralls/github/golang-migrate/migrate/master.svg)](https://coveralls.io/github/golang-migrate/migrate?branch=master)
-[![packagecloud.io](https://img.shields.io/badge/deb-packagecloud.io-844fec.svg)](https://packagecloud.io/golang-migrate/migrate?filter=debs)
-[![Docker Pulls](https://img.shields.io/docker/pulls/migrate/migrate.svg)](https://hub.docker.com/r/migrate/migrate/)
+<!-- [![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/golang-migrate/migrate/ci.yaml?branch=master)](https://github.com/golang-migrate/migrate/actions/workflows/ci.yaml?query=branch%3Amaster) -->
+<!-- [![GoDoc](https://pkg.go.dev/badge/github.com/golang-migrate/migrate)](https://pkg.go.dev/github.com/golang-migrate/migrate/v4) -->
+<!-- [![Coverage Status](https://img.shields.io/coveralls/github/golang-migrate/migrate/master.svg)](https://coveralls.io/github/golang-migrate/migrate?branch=master) -->
+<!-- [![packagecloud.io](https://img.shields.io/badge/deb-packagecloud.io-844fec.svg)](https://packagecloud.io/golang-migrate/migrate?filter=debs) -->
+<!-- [![Docker Pulls](https://img.shields.io/docker/pulls/migrate/migrate.svg)](https://hub.docker.com/r/migrate/migrate/) -->
 ![Supported Go Versions](https://img.shields.io/badge/Go-1.21%2C%201.22-lightgrey.svg)
-[![GitHub Release](https://img.shields.io/github/release/golang-migrate/migrate.svg)](https://github.com/golang-migrate/migrate/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/golang-migrate/migrate/v4)](https://goreportcard.com/report/github.com/golang-migrate/migrate/v4)
+<!-- [![GitHub Release](https://img.shields.io/github/release/golang-migrate/migrate.svg)](https://github.com/golang-migrate/migrate/releases) -->
+<!-- [![Go Report Card](https://goreportcard.com/badge/github.com/golang-migrate/migrate/v4)](https://goreportcard.com/report/github.com/golang-migrate/migrate/v4) -->
 
-# migrate
+# golang-migrate-plus
+
+This project is based off of the golang-migrate package.
+
+## Migration History
+
+golang-migrate-plus adds migration history tracking, so that you can identify which migrations you have previously
+applied.  By default, this will exist in the `schema_migrations_history` table.
+
+> You can choose a different name for the history table via the `x-migrations-history-table` option.
+
+### x-migrations-history-enabled (default: false)
+
+Migration history is disabled by default.  To enable migration history, provide `x-migrations-history-enabled=true` in
+your connection string.
+
+## Sourcing
+
+golang-migrate-plus also adds migration file sourcing support via the `source` and `exec` commands:
+
+### x-migrations-path
+To better support sourcing and allow you to store your views, procedures, etc. in a sibling folder,
+golang-migrate-plus adds an optional `x-migrations-path` option to the `file://` driver.  (No other
+source driver currently supports the migrations path option.)
+
+Use it like this:
+
+```
+// Previously:
+// file:///app/migrations
+
+// Now:
+file:///app?x-migrations-path=migrations
+```
+
+> Providing `/app` as your mount point will allow you to include e.g. `/app/views` in your file mount, so that your migration files can reference relative paths such as `../views/some_view_definition.sql`.
+
+### Usage
+
+- Use `source` to import a separate sql file into your migration script.  Example:
+
+  ```
+  create table if not exists users(id int, name varchar(80));
+
+  -- Suppose this view selects * from users where len(name) > 10
+  source "../views/vw_users_with_long_names.sql";
+  ```
+
+  > Before the migration is applied, the contents of `vw_users_with_long_names.sql` will be directly inserted into the migration contents, and the result will be run as a single sql execution.
+
+- Use `exec` to run a separate sql file as an independent sql execution.
+
+  ```
+  create table if not exists animals(id int, color varchar(80));
+
+  -- Suppose this inserts 5 rows into the animals table
+  exec "../seed_data/add_5_animals.sql";
+  ```
+
+  > The `create table` command will be run as its own sql execution; next, the contents of `add_5_animals.sql` will be run as a second sql execution.
+  >
+  > This is useful for database types which do not support, for example, creating multiple procedures within a single sql execution, and would otherwise require a separate migration script for each procedure.
+  >
+  > Sourcing allows you to define your views, procedures, etc. in source control, more easily track diffs to the file, and avoid race conditions whereby separate developers make simultaneous edits to a view and overwrite one or the other's changes.
+
+## Database Support
+
+golang-migrate-plus currently only covers a small subset of databases.  Check the table below to see if your database is supported.
+
+Database | Supported? | Notes
+--------|------------|--------
+**Postgres** | :white_check_mark: | All features supported
+**MySQL**    | :white_check_mark: | No TRUNCATE trigger support for manual truncate commands on schema_migrations
+**Singlestore** | :white_check_mark: | No triggers support for manual changes to schema_migrations
+**Others** | :x: | -
+
+## Forced Transactional Migrations via x-force-transactional-migrations (default: false)
+
+By default, golang-migrate and golang-migrate-plus do not run migrations within a transaction.
+Typically individual migration files will explicitly opt in by beginning and ending with a `begin`/`commit`
+(or equivalent transaction statements, depending on choice of database).
+
+Enabling `x-force-transactional-migrations` will force each migration to run in a transaction.
+Do note that some database types have special cases that supercede transactions; for instance,
+a CREATE TABLE statement in MySQL will immediately commit the active transaction.  Consult your
+database's documentation for more information.
+
+> Note:  If existing migration files already have e.g. `BEGIN` and `COMMIT` statements, they will not conflict with the `x-force-transactional-migrations` option.  They will simply be ignored, and one single transaction will run.
+
+
+# migrate (Original base package)
 
 __Database migrations written in Go. Use as [CLI](#cli-usage) or import as [library](#use-in-your-go-project).__
 

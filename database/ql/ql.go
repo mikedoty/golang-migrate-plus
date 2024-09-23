@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/source"
 	_ "modernc.org/ql/driver"
 )
 
@@ -97,6 +98,11 @@ func (m *Ql) ensureVersionTable() (err error) {
 		return err
 	}
 	return nil
+}
+
+// This database driver does not currently support file sourcing.
+func (m *Ql) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 func (m *Ql) Open(url string) (database.Driver, error) {
@@ -202,15 +208,15 @@ func (m *Ql) executeQuery(query string) error {
 	}
 	return nil
 }
-func (m *Ql) SetVersion(version int, dirty bool) error {
+func (m *Ql) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	tx, err := m.db.Begin()
 	if err != nil {
-		return &database.Error{OrigErr: err, Err: "transaction start failed"}
+		return nil, &database.Error{OrigErr: err, Err: "transaction start failed"}
 	}
 
 	query := "TRUNCATE TABLE " + m.config.MigrationsTable
 	if _, err := tx.Exec(query); err != nil {
-		return &database.Error{OrigErr: err, Query: []byte(query)}
+		return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 	}
 
 	// Also re-write the schema version for nil dirty versions to prevent
@@ -223,15 +229,15 @@ func (m *Ql) SetVersion(version int, dirty bool) error {
 			if errRollback := tx.Rollback(); errRollback != nil {
 				err = multierror.Append(err, errRollback)
 			}
-			return &database.Error{OrigErr: err, Query: []byte(query)}
+			return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return &database.Error{OrigErr: err, Err: "transaction commit failed"}
+		return nil, &database.Error{OrigErr: err, Err: "transaction commit failed"}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (m *Ql) Version() (version int, dirty bool, err error) {
@@ -241,4 +247,9 @@ func (m *Ql) Version() (version int, dirty bool, err error) {
 		return database.NilVersion, false, nil
 	}
 	return version, dirty, nil
+}
+
+func (m *Ql) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }

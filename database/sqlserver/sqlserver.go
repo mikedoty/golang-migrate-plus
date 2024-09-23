@@ -14,6 +14,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 	mssql "github.com/microsoft/go-mssqldb" // mssql support
 )
@@ -119,6 +120,11 @@ func WithInstance(instance *sql.DB, config *Config) (database.Driver, error) {
 	}
 
 	return ss, nil
+}
+
+// This database driver does not currently support file sourcing.
+func (ss *SQLServer) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 // Open a connection to the database.
@@ -256,11 +262,11 @@ func (ss *SQLServer) Run(migration io.Reader) error {
 }
 
 // SetVersion for the current database
-func (ss *SQLServer) SetVersion(version int, dirty bool) error {
+func (ss *SQLServer) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 
 	tx, err := ss.conn.BeginTx(context.Background(), &sql.TxOptions{})
 	if err != nil {
-		return &database.Error{OrigErr: err, Err: "transaction start failed"}
+		return nil, &database.Error{OrigErr: err, Err: "transaction start failed"}
 	}
 
 	query := `TRUNCATE TABLE ` + ss.getMigrationTable()
@@ -268,7 +274,7 @@ func (ss *SQLServer) SetVersion(version int, dirty bool) error {
 		if errRollback := tx.Rollback(); errRollback != nil {
 			err = multierror.Append(err, errRollback)
 		}
-		return &database.Error{OrigErr: err, Query: []byte(query)}
+		return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 	}
 
 	// Also re-write the schema version for nil dirty versions to prevent
@@ -284,15 +290,15 @@ func (ss *SQLServer) SetVersion(version int, dirty bool) error {
 			if errRollback := tx.Rollback(); errRollback != nil {
 				err = multierror.Append(err, errRollback)
 			}
-			return &database.Error{OrigErr: err, Query: []byte(query)}
+			return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return &database.Error{OrigErr: err, Err: "transaction commit failed"}
+		return nil, &database.Error{OrigErr: err, Err: "transaction commit failed"}
 	}
 
-	return nil
+	return nil, nil
 }
 
 // Version of the current database state
@@ -310,6 +316,11 @@ func (ss *SQLServer) Version() (version int, dirty bool, err error) {
 	default:
 		return version, dirty, nil
 	}
+}
+
+func (ss *SQLServer) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 // Drop all tables from the database.

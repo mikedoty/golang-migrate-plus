@@ -222,6 +222,10 @@ func versionCmd(m *migrate.Migrate) error {
 	return nil
 }
 
+func listCmd(m *migrate.Migrate) ([]int, error) {
+	return m.ListAppliedVersions()
+}
+
 // numDownMigrationsFromArgs returns an int for number of migrations to apply
 // and a bool indicating if we need a confirm before applying
 func numDownMigrationsFromArgs(applyAll bool, args []string) (int, bool, error) {

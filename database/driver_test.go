@@ -3,6 +3,8 @@ package database
 import (
 	"io"
 	"testing"
+
+	"github.com/golang-migrate/migrate/v4/source"
 )
 
 func ExampleDriver() {
@@ -15,7 +17,13 @@ func ExampleDriver() {
 // Using database/stub here is not possible as it
 // results in an import cycle.
 type mockDriver struct {
-	url string
+	url       string
+	sourceDrv source.Driver
+}
+
+func (m *mockDriver) SetSourceDriver(sourceDrv source.Driver) error {
+	m.sourceDrv = sourceDrv
+	return nil
 }
 
 func (m *mockDriver) Open(url string) (Driver, error) {
@@ -40,12 +48,17 @@ func (m *mockDriver) Run(migration io.Reader) error {
 	return nil
 }
 
-func (m *mockDriver) SetVersion(version int, dirty bool) error {
-	return nil
+func (m *mockDriver) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
+	return nil, nil
 }
 
 func (m *mockDriver) Version() (version int, dirty bool, err error) {
 	return 0, false, nil
+}
+
+func (m *mockDriver) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 func (m *mockDriver) Drop() error {

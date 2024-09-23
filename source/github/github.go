@@ -213,3 +213,8 @@ func (g *Github) ReadDown(version uint) (r io.ReadCloser, identifier string, err
 	}
 	return nil, "", &os.PathError{Op: fmt.Sprintf("read version %v", version), Path: g.config.Path, Err: os.ErrNotExist}
 }
+
+// This source driver does not support ReadAny.
+func (g *Github) ReadAny(relativeFilepath string) (io.ReadCloser, error) {
+	panic("This source driver does not support ReadAny.")
+}

@@ -111,6 +111,15 @@ func New(sourceURL, databaseURL string) (*Migrate, error) {
 	}
 	m.databaseDrv = databaseDrv
 
+	err = m.databaseDrv.SetSourceDriver(m.sourceDrv)
+	if err != nil {
+		if err == database.ErrNotImplemented {
+			m.logVerbosePrintf("This database driver does not currently support file sourcing.")
+		} else {
+			return nil, err
+		}
+	}
+
 	return m, nil
 }
 
@@ -373,7 +382,10 @@ func (m *Migrate) Force(version int) error {
 		return err
 	}
 
-	if err := m.databaseDrv.SetVersion(version, false); err != nil {
+	// Forcing version is always considered an up migration
+	// for history tracking purposes.
+	direction := source.Up
+	if _, err := m.databaseDrv.SetVersion(version, false, true, &direction); err != nil {
 		return m.unlockErr(err)
 	}
 
@@ -393,6 +405,10 @@ func (m *Migrate) Version() (version uint, dirty bool, err error) {
 	}
 
 	return suint(v), d, nil
+}
+
+func (m *Migrate) ListAppliedVersions() ([]int, error) {
+	return m.databaseDrv.ListAppliedVersions()
 }
 
 // read reads either up or down migrations from source `from` to `to`.
@@ -737,7 +753,8 @@ func (m *Migrate) runMigrations(ret <-chan interface{}) error {
 			migr := r
 
 			// set version with dirty state
-			if err := m.databaseDrv.SetVersion(migr.TargetVersion, true); err != nil {
+			pDirection, err := m.databaseDrv.SetVersion(migr.TargetVersion, true, false, nil)
+			if err != nil {
 				return err
 			}
 
@@ -749,7 +766,7 @@ func (m *Migrate) runMigrations(ret <-chan interface{}) error {
 			}
 
 			// set clean state
-			if err := m.databaseDrv.SetVersion(migr.TargetVersion, false); err != nil {
+			if _, err := m.databaseDrv.SetVersion(migr.TargetVersion, false, false, pDirection); err != nil {
 				return err
 			}
 

@@ -14,6 +14,7 @@ import (
 	"github.com/gocql/gocql"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/multistmt"
+	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/hashicorp/go-multierror"
 )
 
@@ -81,6 +82,11 @@ func WithInstance(session *gocql.Session, config *Config) (database.Driver, erro
 	}
 
 	return c, nil
+}
+
+// This database driver does not currently support file sourcing.
+func (c *Cassandra) SetSourceDriver(sourceDrv source.Driver) error {
+	return database.ErrNotImplemented
 }
 
 func (c *Cassandra) Open(url string) (database.Driver, error) {
@@ -243,7 +249,7 @@ func (c *Cassandra) Run(migration io.Reader) error {
 	return nil
 }
 
-func (c *Cassandra) SetVersion(version int, dirty bool) error {
+func (c *Cassandra) SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	// DELETE instead of TRUNCATE because AWS Keyspaces does not support it
 	// see: https://docs.aws.amazon.com/keyspaces/latest/devguide/cassandra-apis.html
 	squery := `SELECT version FROM "` + c.config.MigrationsTable + `"`
@@ -252,11 +258,11 @@ func (c *Cassandra) SetVersion(version int, dirty bool) error {
 	var previous int
 	for iter.Scan(&previous) {
 		if err := c.session.Query(dquery, previous).Exec(); err != nil {
-			return &database.Error{OrigErr: err, Query: []byte(dquery)}
+			return nil, &database.Error{OrigErr: err, Query: []byte(dquery)}
 		}
 	}
 	if err := iter.Close(); err != nil {
-		return &database.Error{OrigErr: err, Query: []byte(squery)}
+		return nil, &database.Error{OrigErr: err, Query: []byte(squery)}
 	}
 
 	// Also re-write the schema version for nil dirty versions to prevent
@@ -265,11 +271,11 @@ func (c *Cassandra) SetVersion(version int, dirty bool) error {
 	if version >= 0 || (version == database.NilVersion && dirty) {
 		query := `INSERT INTO "` + c.config.MigrationsTable + `" (version, dirty) VALUES (?, ?)`
 		if err := c.session.Query(query, version, dirty).Exec(); err != nil {
-			return &database.Error{OrigErr: err, Query: []byte(query)}
+			return nil, &database.Error{OrigErr: err, Query: []byte(query)}
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 // Return current keyspace version
@@ -289,6 +295,11 @@ func (c *Cassandra) Version() (version int, dirty bool, err error) {
 	default:
 		return version, dirty, nil
 	}
+}
+
+func (c *Cassandra) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 func (c *Cassandra) Drop() error {

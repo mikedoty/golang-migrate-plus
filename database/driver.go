@@ -10,11 +10,14 @@ import (
 	"sync"
 
 	iurl "github.com/golang-migrate/migrate/v4/internal/url"
+	"github.com/golang-migrate/migrate/v4/source"
 )
 
 var (
 	ErrLocked    = fmt.Errorf("can't acquire lock")
 	ErrNotLocked = fmt.Errorf("can't unlock, as not currently locked")
+
+	ErrNotImplemented = fmt.Errorf("not implemented")
 )
 
 const NilVersion int = -1
@@ -48,6 +51,8 @@ type Driver interface {
 	// only once per instance.
 	Open(url string) (Driver, error)
 
+	SetSourceDriver(sourceDrv source.Driver) error
+
 	// Close closes the underlying database instance managed by the driver.
 	// Migrate will call this function only once per instance.
 	Close() error
@@ -68,12 +73,26 @@ type Driver interface {
 	// SetVersion saves version and dirty state.
 	// Migrate will call this function before and after each call to Run.
 	// version must be >= -1. -1 means NilVersion.
-	SetVersion(version int, dirty bool) error
+	//
+	//   forced
+	// forced flag indicates that this is a forced migration.
+	//
+	//   knownDirection
+	// If knownDirection is not provided, direction will be estimated
+	// based on comparing the given version with the last applied version.
+	SetVersion(version int, dirty bool, forced bool, knownDirection *source.Direction) (*source.Direction, error)
 
 	// Version returns the currently active version and if the database is dirty.
 	// When no migration has been applied, it must return version -1.
 	// Dirty means, a previous migration failed and user interaction is required.
 	Version() (version int, dirty bool, err error)
+
+	// ListAppliedVersions returns a list of all versions that are known
+	// to be applied to the database.  This will not include versions that
+	// were applied before history tracking was enabled.
+	// Versions that were applied but "reverted" by down migrations will
+	// not be included until up migrations are re-run to restore them.
+	ListAppliedVersions() ([]int, error)
 
 	// Drop deletes everything in the database.
 	// Note that this is a breaking action, a new call to Open() is necessary to

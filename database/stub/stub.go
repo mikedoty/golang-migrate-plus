@@ -7,6 +7,7 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/source"
 )
 
 func init() {
@@ -22,7 +23,14 @@ type Stub struct {
 	IsDirty           bool
 	isLocked          atomic.Bool
 
-	Config *Config
+	Config    *Config
+	sourceDrv source.Driver
+}
+
+// This database driver does not currently support file sourcing.
+func (s *Stub) SetSourceDriver(sourceDrv source.Driver) error {
+	s.sourceDrv = sourceDrv
+	return nil
 }
 
 func (s *Stub) Open(url string) (database.Driver, error) {
@@ -73,14 +81,19 @@ func (s *Stub) Run(migration io.Reader) error {
 	return nil
 }
 
-func (s *Stub) SetVersion(version int, state bool) error {
+func (s *Stub) SetVersion(version int, state bool, forced bool, knownDirection *source.Direction) (*source.Direction, error) {
 	s.CurrentVersion = version
 	s.IsDirty = state
-	return nil
+	return nil, nil
 }
 
 func (s *Stub) Version() (version int, dirty bool, err error) {
 	return s.CurrentVersion, s.IsDirty, nil
+}
+
+func (s *Stub) ListAppliedVersions() ([]int, error) {
+	// Not implemented
+	return []int{}, nil
 }
 
 const DROP = "DROP"

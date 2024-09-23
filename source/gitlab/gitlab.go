@@ -235,3 +235,8 @@ func (g *Gitlab) ReadDown(version uint) (r io.ReadCloser, identifier string, err
 
 	return nil, "", &os.PathError{Op: fmt.Sprintf("read version %v", version), Path: g.path, Err: os.ErrNotExist}
 }
+
+// This source driver does not support ReadAny.
+func (g *Gitlab) ReadAny(relativeFilepath string) (io.ReadCloser, error) {
+	panic("This source driver does not support ReadAny.")
+}

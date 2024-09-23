@@ -20,24 +20,36 @@ type File struct {
 }
 
 func (f *File) Open(url string) (source.Driver, error) {
-	p, err := parseURL(url)
+	mountPath, migrationsPath, err := parseURL(url)
 	if err != nil {
 		return nil, err
 	}
 	nf := &File{
 		url:  url,
-		path: p,
+		path: mountPath,
 	}
-	if err := nf.Init(os.DirFS(p), "."); err != nil {
+
+	// Migrations may be located in a subfolder of the mount path,
+	// e.g.:
+	//
+	// /migrations
+	//   /1_foo.up.sql
+	//   ...
+	// /views
+	//   /vw_some_view.sql
+	if migrationsPath == "" {
+		migrationsPath = "."
+	}
+	if err := nf.Init(os.DirFS(mountPath), migrationsPath); err != nil {
 		return nil, err
 	}
 	return nf, nil
 }
 
-func parseURL(url string) (string, error) {
+func parseURL(url string) (mountPath string, migrationsPath string, err error) {
 	u, err := nurl.Parse(url)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	// concat host and path to restore full path
 	// host might be `.`
@@ -46,11 +58,13 @@ func parseURL(url string) (string, error) {
 		p = u.Host + u.Path
 	}
 
+	migrationsPath = u.Query().Get("x-migrations-path")
+
 	if len(p) == 0 {
 		// default to current directory if no path
 		wd, err := os.Getwd()
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		p = wd
 
@@ -58,9 +72,9 @@ func parseURL(url string) (string, error) {
 		// make path absolute if relative
 		abs, err := filepath.Abs(p)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		p = abs
 	}
-	return p, nil
+	return p, migrationsPath, nil
 }
