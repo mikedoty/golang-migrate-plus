@@ -4,5 +4,5 @@
 package cli
 
 import (
-	_ "github.com/golang-migrate/migrate/v4/source/google_cloud_storage"
+	_ "github.com/mikedoty/golang-migrate-plus/source/google_cloud_storage"
 )

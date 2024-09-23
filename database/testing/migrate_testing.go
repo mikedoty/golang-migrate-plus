@@ -8,7 +8,7 @@ import (
 )
 
 import (
-	"github.com/golang-migrate/migrate/v4"
+	"github.com/mikedoty/golang-migrate-plus"
 )
 
 // TestMigrate runs integration-tests between the Migrate layer and database implementations.

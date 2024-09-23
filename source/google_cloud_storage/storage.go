@@ -11,7 +11,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/storage"
-	"github.com/golang-migrate/migrate/v4/source"
+	"github.com/mikedoty/golang-migrate-plus/source"
 	"google.golang.org/api/iterator"
 )
 

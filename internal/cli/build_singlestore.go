@@ -4,5 +4,5 @@
 package cli
 
 import (
-	_ "github.com/golang-migrate/migrate/v4/database/singlestore"
+	_ "github.com/mikedoty/golang-migrate-plus/database/singlestore"
 )

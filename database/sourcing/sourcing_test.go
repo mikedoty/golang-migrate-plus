@@ -6,7 +6,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/mikedoty/golang-migrate-plus/source/iofs"
 )
 
 //go:embed testdata/migrations
