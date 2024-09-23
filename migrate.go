@@ -111,6 +111,15 @@ func New(sourceURL, databaseURL string) (*Migrate, error) {
 	}
 	m.databaseDrv = databaseDrv
 
+	err = m.databaseDrv.SetSourceDriver(m.sourceDrv)
+	if err != nil {
+		if err == database.ErrNotImplemented {
+			m.logVerbosePrintf("This database driver does not currently support file sourcing.")
+		} else {
+			return nil, err
+		}
+	}
+
 	return m, nil
 }
 
