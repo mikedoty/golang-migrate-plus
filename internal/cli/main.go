@@ -31,6 +31,8 @@ const (
 	dropUsage = `drop [-f]    Drop everything inside database
 	Use -f to bypass confirmation`
 	forceUsage = `force V      Set version V but don't run migration (ignores dirty state)`
+	listUsage  = `list [N]     List all applied migration versions or the N highest
+	       applied migrations`
 )
 
 func handleSubCmdHelp(help bool, usage string, flagSet *flag.FlagSet) {
@@ -92,9 +94,10 @@ Commands:
   %s
   %s
   version      Print current migration version
+  %s
 
 Source drivers: `+strings.Join(source.List(), ", ")+`
-Database drivers: `+strings.Join(database.List(), ", ")+"\n", createUsage, gotoUsage, upUsage, downUsage, dropUsage, forceUsage)
+Database drivers: `+strings.Join(database.List(), ", ")+"\n", createUsage, gotoUsage, upUsage, downUsage, dropUsage, forceUsage, listUsage)
 	}
 
 	flag.Parse()
@@ -369,6 +372,50 @@ Database drivers: `+strings.Join(database.List(), ", ")+"\n", createUsage, gotoU
 
 		if err := versionCmd(migrater); err != nil {
 			log.fatalErr(err)
+		}
+
+	case "list":
+		listSet, _ := newFlagSetWithHelp("up")
+
+		if err := listSet.Parse(args); err != nil {
+			log.fatalErr(err)
+		}
+
+		if migraterErr != nil {
+			log.fatalErr(migraterErr)
+		}
+
+		versions, err := listCmd(migrater)
+		if err != nil {
+			log.fatalErr(err)
+		}
+
+		limit := -1
+		if listSet.NArg() > 0 {
+			n, err := strconv.ParseUint(listSet.Arg(0), 10, 64)
+			if err != nil {
+				log.fatal("error: can't read argument N")
+			}
+			limit = int(n)
+		}
+
+		longestIDString := fmt.Sprintf("%d", len(versions))
+		for i, version := range versions {
+			if limit > 0 && i < len(versions)-limit {
+				continue
+			}
+
+			fmt.Printf("%d", (i + 1))
+			for j := len(fmt.Sprintf("%d", i)); j < len(longestIDString); j++ {
+				fmt.Printf(" ")
+			}
+			fmt.Printf(" | %v\n", version)
+		}
+
+		if limit > 0 && limit > len(versions) {
+			fmt.Printf("Warning: You requested the %d highest applied versions, but only %d applied versions exist.\n", limit, len(versions))
+		} else if limit == 0 {
+			fmt.Println("Warning: You requested 0 applied versions.  All applied versions were returned.")
 		}
 
 	default:
