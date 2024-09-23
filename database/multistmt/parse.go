@@ -5,6 +5,9 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+
+	"github.com/golang-migrate/migrate/v4/database/sourcing"
+	"github.com/golang-migrate/migrate/v4/source"
 )
 
 // StartBufSize is the default starting size of the buffer used to scan and parse multi-statement migrations
@@ -38,6 +41,26 @@ func Parse(reader io.Reader, delimiter []byte, maxMigrationSize int, h Handler) 
 	scanner.Split(splitWithDelimiter(delimiter))
 	for scanner.Scan() {
 		cont := h(scanner.Bytes())
+		if !cont {
+			break
+		}
+	}
+	return scanner.Err()
+}
+
+func ParseWithSourcing(sourceDrv source.Driver, reader io.Reader, delimiter []byte, maxMigrationSize int, h Handler) error {
+	scanner := bufio.NewScanner(reader)
+	scanner.Buffer(make([]byte, 0, StartBufSize), maxMigrationSize)
+	scanner.Split(splitWithDelimiter(delimiter))
+	for scanner.Scan() {
+		sb := scanner.Bytes()
+
+		sb, err := sourcing.ImportSourcing(sourceDrv, sb)
+		if err != nil {
+			return err
+		}
+
+		cont := h(sb)
 		if !cont {
 			break
 		}
