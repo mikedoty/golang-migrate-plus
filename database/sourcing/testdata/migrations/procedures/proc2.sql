@@ -1,0 +1,1 @@
+CREATE PROCEDURE proc2;
