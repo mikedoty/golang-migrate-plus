@@ -136,7 +136,7 @@ func TestSetVersion(t *testing.T, d database.Driver) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := d.SetVersion(tc.version, tc.dirty)
+			_, err := d.SetVersion(tc.version, tc.dirty, false, nil)
 			if err != tc.expectedErr {
 				t.Fatal("Got unexpected error:", err, "!=", tc.expectedErr)
 			}
