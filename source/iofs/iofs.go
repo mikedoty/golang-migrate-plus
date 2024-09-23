@@ -19,6 +19,7 @@ type driver struct {
 }
 
 // New returns a new Driver from io/fs#FS and a relative path.
+// Primarily used for tests.
 func New(fsys fs.FS, path string) (source.Driver, error) {
 	var i driver
 	if err := i.Init(fsys, path); err != nil {
@@ -156,6 +157,14 @@ func (d *PartialDriver) ReadDown(version uint) (r io.ReadCloser, identifier stri
 		Path: d.path,
 		Err:  fs.ErrNotExist,
 	}
+}
+
+func (d *PartialDriver) ReadAny(relativeFilepath string) (r io.ReadCloser, err error) {
+	body, err := d.open(path.Join(d.path, relativeFilepath))
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }
 
 func (d *PartialDriver) open(path string) (fs.File, error) {
