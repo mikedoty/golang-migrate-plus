@@ -58,11 +58,13 @@ func ImportSourcing(sourceDrv source.Driver, sqlBytes []byte) ([]byte, error) {
 
 func GatherExecs(sourceDrv source.Driver, sqlBytes []byte) ([][]byte, bool, error) {
 	sqlString := string(sqlBytes)
-	sqlString, _ = source.StripSqlComments(sqlString)
+	// sqlString, _ = source.StripSqlComments(sqlString)
 	sqlString = strings.TrimSpace(sqlString)
 
-	runInTransaction := (strings.HasPrefix(strings.ToLower(sqlString), "begin;") &&
-		strings.HasSuffix(strings.ToLower(sqlString), "commit;"))
+	hasBeginStatement := (strings.HasPrefix(sqlString, "BEGIN;") || strings.HasPrefix(sqlString, "begin;"))
+	hasCommitStatement := (strings.HasPrefix(sqlString, "COMMIT;") || strings.HasPrefix(sqlString, "commit;"))
+
+	runInTransaction := hasBeginStatement && hasCommitStatement
 
 	if runInTransaction {
 		// Remove "BEGIN;" and "COMMIT;"

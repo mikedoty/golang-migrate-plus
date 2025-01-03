@@ -16,13 +16,13 @@ import (
 
 	"go.uber.org/atomic"
 
-	"github.com/mikedoty/golang-migrate-plus"
+	"github.com/hashicorp/go-multierror"
+	"github.com/lib/pq"
+	migrate "github.com/mikedoty/golang-migrate-plus"
 	"github.com/mikedoty/golang-migrate-plus/database"
 	"github.com/mikedoty/golang-migrate-plus/database/multistmt"
 	"github.com/mikedoty/golang-migrate-plus/database/sourcing"
 	"github.com/mikedoty/golang-migrate-plus/source"
-	"github.com/hashicorp/go-multierror"
-	"github.com/lib/pq"
 )
 
 func init() {
@@ -356,6 +356,7 @@ func (p *Postgres) Run(migration io.Reader) error {
 		}
 		return err
 	}
+
 	migr, err := io.ReadAll(migration)
 	if err != nil {
 		return err
