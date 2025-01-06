@@ -58,7 +58,7 @@ func ImportSourcing(sourceDrv source.Driver, sqlBytes []byte) ([]byte, error) {
 
 func GatherExecs(sourceDrv source.Driver, sqlBytes []byte) ([][]byte, bool, error) {
 	sqlString := string(sqlBytes)
-	// sqlString, _ = source.StripSqlComments(sqlString)
+	sqlString, _ = source.StripSqlComments(sqlString)
 	sqlString = strings.TrimSpace(sqlString)
 
 	hasBeginStatement := (strings.HasPrefix(sqlString, "BEGIN;") || strings.HasPrefix(sqlString, "begin;"))
