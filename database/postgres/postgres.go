@@ -670,7 +670,13 @@ func (p *Postgres) ListAppliedVersions() ([]int, error) {
 		where
 			action in ('MIGRATE', 'INSERT', 'UPDATE')
 			and new_dirty = false
-			and direction = 'up'
+			and (
+				(direction = 'up')
+				-- Fixes issue where manual UPDATE will set
+				-- direction to NULL, but we want to respect it
+				-- and consider it an applied migration now too (since it's not dirty)
+				or (notes = 'Manual update of dirty flag')
+			)
 			and reverted = false
 		order by
 			new_version asc
